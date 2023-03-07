@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/SimpleBackEndProgram.dir/main.cpp.o CMakeFiles/SimpleBackEndProgram.dir/server/server.cpp.o -o SimpleBackEndProgram 

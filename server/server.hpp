@@ -8,21 +8,17 @@
 #include "arpa/inet.h"
 #include<iostream>
 #include<sys/epoll.h>
-
+#include "../threadPoll/threadpool.h"
 #define PORT 8888
 #define ERROR(error) std::cout<<"[ "<<__LINE__<<" ]  "<<error<<" failed "<<std::endl;
 class server {
 private:
     int serverFd;
-    int epfd;
-    int epollNum;
-    int evsSize;
     uint32_t recvSize;
     uint32_t sendSize;
     std::string recvBuf;
     std::string sendBuf;
     sockaddr_in addr{};
-    epoll_event ev;
 public:
     server();
     inline ~server(){
@@ -31,7 +27,9 @@ public:
 private:
     bool safeRecv(int fd,char* buf,uint32_t n,int flag);
     bool safeSend(int fd,char* buf,uint32_t n,int flag);
-    void sendAndRecv();
+    void worker();
+    void sendAndRecv(int cfd);
+    std::threadpool pool{50};
 };
 
 

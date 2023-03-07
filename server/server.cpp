@@ -33,91 +33,69 @@ server::server() {
         close(serverFd);
         exit(-1);
     }
-    epfd = epoll_create(10);
-    if (epfd == -1) {
-        ERROR(epoll_create)
-        exit(-1);
+    int addrLen=sizeof(addr);
+    while(true){
+        int cfd= accept(this->serverFd, reinterpret_cast<sockaddr*>(&addr), reinterpret_cast<socklen_t*>(&addrLen));
+        pool.commit([this,cfd](){
+            sendAndRecv(cfd);
+        });
     }
-
-    ev.data.fd = serverFd;
-    ev.events = EPOLLIN;
-    epoll_ctl(epfd, EPOLL_CTL_ADD, serverFd, &ev);
-
-    sendAndRecv();
-
 }
 
 bool server::safeRecv(int fd, char *buf, uint32_t n, int flag) {
-    uint32_t count=0;
-    uint32_t i=0;
-    while((i= recv(fd,buf+count,n-count,flag))>0){
-        count+=i;
-        if(count>=n){
+    uint32_t count = 0;
+    uint32_t i = 0;
+    while ((i = recv(fd, buf + count, n - count, flag)) > 0) {
+        count += i;
+        if (count >= n) {
             return true;
         }
     }
     return false;
 }
 
-bool server::safeSend(int fd, char *buf, uint32_t n, int flag){
-    uint32_t count=0;
-    uint32_t i=0;
-    while((i= send(fd,buf+count,n-count,flag))>0){
-        count+=i;
-        if(count>=n){
+bool server::safeSend(int fd, char *buf, uint32_t n, int flag) {
+    uint32_t count = 0;
+    uint32_t i = 0;
+    while ((i = send(fd, buf + count, n - count, flag)) > 0) {
+        count += i;
+        if (count >= n) {
             return true;
         }
     }
     return false;
 }
 
-void server::sendAndRecv() {
-    epoll_event evs[1024]{0};
-    evsSize = sizeof(evs) / sizeof(evs[0]);
-    while (1) {
-        epollNum = epoll_wait(epfd, evs, evsSize, -1);
-        std::cout << " epollNum = " << epollNum << std::endl;
-        for (int i = 0; i < epollNum; ++i) {
-            int temFd = evs[i].data.fd;
-            if (temFd == serverFd) {
-                //不需要保存信息
-                int cFd= accept(temFd,NULL,NULL);
-                if(cFd==-1){
-                    ERROR("accept")
-                    exit(-1);
-                }
-                std::cout<<"succeed"<<std::endl;
-                ev.events=EPOLLIN;
-                ev.data.fd=temFd;
-                epoll_ctl(epfd,EPOLL_CTL_ADD,cFd,&ev);
-            } else{
-                if(!safeRecv(temFd,reinterpret_cast<char*>(&recvSize),sizeof (uint32_t),0)){
-                    ERROR("recv Size")
-                    epoll_ctl(epfd,EPOLL_CTL_DEL,temFd,NULL);
-                    close(temFd);
-                    exit(-1);
-                }
-                recvBuf.resize(recvSize);
-                if(!safeRecv(temFd,const_cast<char*>(recvBuf.data()),recvSize,0)){
-                    ERROR("recv recvBuf")
-                    epoll_ctl(epfd,EPOLL_CTL_DEL,temFd,NULL);
-                    close(temFd);
-                    exit(-1);
-                }
-                std::cout<<"recv:"<<recvBuf<<std::endl;
-                std::cout<<"send:";
-                sendBuf="server to client:chgchgchg";
-                sendSize=sendBuf.size();
-                if(!safeSend(temFd,reinterpret_cast<char*>(&sendSize),sizeof (sendSize),0)){
-                    ERROR("send error")
-                    exit(-1);
-                }
-                if(!safeSend(temFd,const_cast<char*>(sendBuf.data()),sendSize,0)){
-                    ERROR("send error")
-                    exit(-1);
-                }
-            }
+void server::sendAndRecv(int cfd) {
+    while(true){
+        if (!safeRecv(cfd, reinterpret_cast<char *>(&recvSize), sizeof(uint32_t), 0)) {
+            ERROR("recv Size")
+            close(cfd);
+            exit(-1);
+        }
+        recvBuf.resize(recvSize);
+        if (!safeRecv(cfd, const_cast<char *>(recvBuf.data()), recvSize, 0)) {
+            ERROR("recv recvBuf")
+            close(cfd);
+            exit(-1);
+        }
+        std::cout<<"this thread is: "<<std::this_thread::get_id()<<std::endl;
+        std::cout << "recv:" << recvBuf << std::endl;
+        sendBuf = "server to client:chgchgchg";
+        sendSize = sendBuf.size();
+        if (!safeSend(cfd, reinterpret_cast<char *>(&sendSize), sizeof(sendSize), 0)) {
+            ERROR("send error")
+            exit(-1);
+        }
+        if (!safeSend(cfd, const_cast<char *>(sendBuf.data()), sendSize, 0)) {
+            ERROR("send error")
+            exit(-1);
         }
     }
 }
+
+
+
+
+
 

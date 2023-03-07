@@ -21,33 +21,9 @@ client::client() {
         exit(-1);
     }
     std::cout<<"connect succeed"<<std::endl;
-
-    while(1){
-        //send
-        std::cout<<"send:";
-        sendBuf="client to serverer: zjyzjyzjy";
-        sendSize=sendBuf.size();
-        if(!safeSend(cfd,reinterpret_cast<char*>(&sendSize),sizeof (sendSize),0)){
-            ERROR("send error")
-            exit(-1);
-        }
-        if(!safeSend(cfd,const_cast<char*>(sendBuf.data()),sendSize,0)){
-            ERROR("send error")
-            exit(-1);
-        }
-        //recv
-        if(!safeRecv(cfd,reinterpret_cast<char*>(&recvSize),sizeof (uint32_t),0)){
-            ERROR("recv Size")
-            close(cfd);
-        }
-        recvBuf.resize(recvSize);
-        if(!safeRecv(cfd,const_cast<char*>(recvBuf.data()),recvSize,0)){
-            ERROR("recv recvBuf")
-            close(cfd);
-        }
-        std::cout<<"recv:"<<recvBuf<<std::endl;
+    while(true){
+        sendAndRecv(cfd);
     }
-
 }
 
 bool client::safeRecv(int fd, char *buf, uint32_t n, int flag) {
@@ -72,4 +48,30 @@ bool client::safeSend(int fd, char *buf, uint32_t n, int flag){
         }
     }
     return false;
+}
+
+void client::sendAndRecv(int cfd) {
+    //send
+    std::cout<<"send:";
+    sendBuf="client to serverer: zjyzjyzjy";
+    sendSize=sendBuf.size();
+    if(!safeSend(cfd,reinterpret_cast<char*>(&sendSize),sizeof (sendSize),0)){
+        ERROR("send error")
+        exit(-1);
+    }
+    if(!safeSend(cfd,const_cast<char*>(sendBuf.data()),sendSize,0)){
+        ERROR("send error")
+        exit(-1);
+    }
+    //recv
+    if(!safeRecv(cfd,reinterpret_cast<char*>(&recvSize),sizeof (uint32_t),0)){
+        ERROR("recv Size")
+        close(cfd);
+    }
+    recvBuf.resize(recvSize);
+    if(!safeRecv(cfd,const_cast<char*>(recvBuf.data()),recvSize,0)){
+        ERROR("recv recvBuf")
+        close(cfd);
+    }
+    std::cout<<"recv:"<<recvBuf<<std::endl;
 }

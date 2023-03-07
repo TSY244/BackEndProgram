@@ -23,9 +23,10 @@ public:
     inline ~client(){
         close(cfd);
     }
+private:
+    void sendAndRecv(int cfd);
     bool safeRecv(int fd,char* buf,uint32_t n,int flag);
     bool safeSend(int fd,char* buf,uint32_t n,int flag);
-
 };
 
 

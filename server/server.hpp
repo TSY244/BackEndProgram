@@ -27,7 +27,6 @@ public:
 private:
     bool safeRecv(int fd,char* buf,uint32_t n,int flag);
     bool safeSend(int fd,char* buf,uint32_t n,int flag);
-    void worker();
     void sendAndRecv(int cfd);
     std::threadpool pool{50};
 };
